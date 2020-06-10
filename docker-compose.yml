@@ -1,0 +1,50 @@
+version: "3.4"
+services:
+  php-fpm:
+    build:
+      context: ./
+      dockerfile: ./php-fpm/Dockerfile
+    volumes:
+      - ./docker_symfony:/var/www/html/
+    container_name: php-fpm
+
+  apache:
+    build:
+
+      context: ./
+      dockerfile: ./apache/Dockerfile
+      args:
+        APACHE_VERSION: ${APACHE_VERSION}
+    depends_on:
+      - php-fpm
+      - mariadb_docker
+    volumes:
+      - ./docker_symfony:/var/www/html/
+    ports:
+      - 83:80
+    container_name: apache
+
+  mariadb_docker:
+    image: mariadb:${MARIADB_VERSION:-latest}
+    environment:
+      MYSQL_ROOT_PASSWORD: "123"
+      MYSQL_PASSWORD: "123"
+      MYSQL_USER: "test"
+    ports:
+      - 3306:3306
+    volumes:
+      - ./mariadb_data:/var/lib/mysql
+      - ./mariadb/dump:/docker-entrypoint-initdb.d
+    container_name: mariadb_docker
+  jenkins:
+    image: jenkins/jenkins:lts
+    privileged: true
+    user: root
+    ports:
+      - 82:8080
+      - 50000:50000
+    container_name: jenkins
+    volumes:
+      - ./jenkins:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /usr/local/bin/docker:/usr/local/bin/docker
